@@ -19,10 +19,8 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
 
     Future.delayed(const Duration(seconds: 4),(){
-
       Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) =>
           const OnboardingScreen()), (Route<dynamic> route) => false);
-
     });
     super.initState();
   }

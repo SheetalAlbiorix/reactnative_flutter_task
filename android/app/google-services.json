@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1023009654025",
+    "project_id": "reacteat",
+    "storage_bucket": "reacteat.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1023009654025:android:7546df4bb996b3bf163fd8",
+        "android_client_info": {
+          "package_name": "com.reactnativetask.reactnativetask"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxbeh8bpihKzzP8ZBeacjw75FezhxTw2Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
