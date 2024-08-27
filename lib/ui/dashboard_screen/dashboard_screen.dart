@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:reactnativetask/utils/shared_data.dart';
 import '../../models/store_list_model.dart';
 import '../../utils/base_colors.dart';
 import '../../utils/base_strings.dart';
@@ -20,15 +21,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Timer? _timer;
   int _counter = 0;
   List<bool> toggleStates = List.generate(10, (index) => false);
+  List<StoreListModel>? upcomingData = [];
 
   @override
   void initState() {
+    getData();
     super.initState();
     _startTimer();
   }
 
+  getData() async {
+    upcomingData = await SharedData().getDataStored();
+    print(upcomingData?[0].isNotified);
+    if (upcomingData!.isEmpty) {
+      setState(() {
+        upcomingData?.addAll(stores);
+      });
+    } else {
+      setState(() {
+        upcomingData =  upcomingData;
+      });
+    }
+
+  }
+
   void _startTimer() {
-    _timer = Timer.periodic(const Duration(minutes: 15), (timer) {
+    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
       setState(() {
         _counter++;
         showNotification();
@@ -42,7 +60,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
           centerTitle: true, title: const Text(BaseStrings.featuredStores)),
       body: ListView.builder(
-        itemCount: stores.length,
+        itemCount: upcomingData?.length,
         itemBuilder: (context, index) {
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 5),
@@ -63,7 +81,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               tileColor: BaseColors.baseColor,
               leading: ClipOval(
                 child: CachedNetworkImage(
-                  imageUrl: stores[index].image ?? "",
+                  imageUrl: upcomingData?[index].image ?? "",
                   imageBuilder: (context, imageProvider) => Container(
                     height: 60.0, // Increased size
                     width: 60.0, // Increased size
@@ -81,13 +99,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                 ),
               ),
-              title: Text('${stores[index].name}', style: TextStyles.boldText),
+              title: Text('${upcomingData?[index].name}',
+                  style: TextStyles.boldText),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${BaseStrings.opensAt} ${stores[index].time}',
+                  Text('${BaseStrings.opensAt} ${upcomingData?[index].time}',
                       style: TextStyles.subtitleText),
-                  stores[index].spendAmount != null
+                  upcomingData?[index].spendAmount != null
                       ? Text(
                           '${BaseStrings.spend} ${stores[index].spendAmount}, ${BaseStrings.save} ${stores[index].saveAmount}',
                           style: TextStyles.subText)
@@ -97,11 +116,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
               trailing: CupertinoSwitch(
                 activeColor: BaseColors.greenColor,
                 trackColor: BaseColors.greyColor.withOpacity(0.3),
-                value: toggleStates[index],
-                onChanged: (bool value) {
+                value: upcomingData![index].isNotified ?? false,
+                onChanged: (bool value) async {
+                  // Update the value in your data list
                   setState(() {
-                    toggleStates[index] = value;
+                    upcomingData?[index].isNotified = value;
+                    print(upcomingData?[0].isNotified);
+
+                    SharedData().saveDataStored(upcomingData!);
                   });
+
+                  // Retrieve the updated data from SharedPreferences
+                  var retrievedData = await SharedData().getDataStored();
+
+                  // Print the updated data
+                  print(retrievedData);
+
+
                 },
               ),
             ),

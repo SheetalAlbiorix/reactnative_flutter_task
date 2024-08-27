@@ -43,7 +43,7 @@ class NotificationService {
       priority: Priority.high,
     );
     // var iOSPlatformChannelSpecifics = IOSNotificationDetails();
-    var platformChannelSpecifics = NotificationDetails(
+    var platformChannelSpecifics = const NotificationDetails(
       android: androidPlatformChannelSpecifics,
       // iOS: iOSPlatformChannelSpecifics,
     );
