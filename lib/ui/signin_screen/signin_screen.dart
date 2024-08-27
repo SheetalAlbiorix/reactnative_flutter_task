@@ -6,10 +6,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_social_button/flutter_social_button.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:reactnativetask/uitls/base_assets.dart';
-
-import '../../uitls/base_colors.dart';
+import 'package:reactnativetask/ui/dashboard_screen/dashboard_screen.dart';
 import '../../uitls/base_strings.dart';
+import '../../utils/base_assets.dart';
+import '../../utils/base_colors.dart';
 
 class SignInScreen extends StatefulWidget {
    SignInScreen({super.key});
@@ -173,6 +173,8 @@ class _SignInScreenState extends State<SignInScreen> {
                             idToken: googleAuth.idToken,
                           );
                           await firebaseAuthInstance.signInWithCredential(credential);
+                          Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) =>
+                          const DashboardScreen()), (Route<dynamic> route) => false);
                         }
                       } catch (error) {
                         print(error);

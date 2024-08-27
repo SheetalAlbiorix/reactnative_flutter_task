@@ -7,10 +7,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onboarding_slider/flutter_onboarding_slider.dart';
 import 'package:reactnativetask/ui/signin_screen/signin_screen.dart';
-import 'package:reactnativetask/uitls/base_assets.dart';
-import 'package:reactnativetask/uitls/base_colors.dart';
+
 
 import '../../uitls/base_strings.dart';
+import '../../utils/base_assets.dart';
+import '../../utils/base_colors.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
