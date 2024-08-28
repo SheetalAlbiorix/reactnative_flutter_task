@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_social_button/flutter_social_button.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -212,16 +213,18 @@ class _SignInScreenState extends State<SignInScreen> {
                               );
                               await firebaseAuthInstance
                                   .signInWithCredential(credential);
-                           if(context.mounted){
-                             Navigator.of(context).pushAndRemoveUntil(
-                                 MaterialPageRoute(
-                                     builder: (context) =>
-                                     const DashboardScreen()),
-                                     (Route<dynamic> route) => false);
-                           }
+                              if (context.mounted) {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            const DashboardScreen()),
+                                    (Route<dynamic> route) => false);
+                              }
                             }
                           } catch (error) {
-                            print(error);
+                            if (kDebugMode) {
+                              print(error);
+                            }
                           }
                         },
                         buttonType: ButtonType.google,
@@ -235,9 +238,13 @@ class _SignInScreenState extends State<SignInScreen> {
                         onTap: () async {
                           try {
                             var data = await googleSignIn.signOut();
-                            print(data);
+                            if (kDebugMode) {
+                              print(data);
+                            }
                           } catch (error) {
-                            print(error);
+                            if (kDebugMode) {
+                              print(error);
+                            }
                           }
                         },
                         buttonType: ButtonType.apple,

@@ -1,5 +1,6 @@
 class BaseStrings {
   static const String appName = "React Native Task";
+  static const String baseUrl = "Place base url";
   static const String opensAt = "Opens at";
   static const String spend = "Spend";
   static const String save = "Save";
@@ -20,4 +21,14 @@ class BaseStrings {
   static const String orSignInWithText = 'Or sign in with';
   static const String invalidCredentials = "Invalid Credentials!";
   static const String savedData = "savedData";
+  static const String addStore = "Add New Store";
+  static const String storeName = "Store Name";
+  static const String openTime = "Open Time";
+  static const String spendAmount = "Spend Amount";
+  static const String cancel = "Cancel";
+  static const String noInternetConnection = 'No Internet Connection';
+  static const String token = 'token';
+  static const String add = 'Add';
+  static const String saveAmount = 'Save Amount';
+  static const String signOut = 'Sign Out';
 }

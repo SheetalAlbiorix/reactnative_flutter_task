@@ -1,5 +1,6 @@
 // This file will handle the setup and display of notifications.
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -32,13 +33,10 @@ class NotificationService {
   }
 
   Future<void> showNotification() async {
-    print("Attempting to show notification...");
 
     const androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'channel_id', // Change this to a unique channel ID
       'Channel Name', // Change this to a descriptive channel name
-      // 'Channel Description',
-      // Change this to a descriptive channel description, comment this line for flutter_local_notification ^9.0.0
       importance: Importance.high,
       priority: Priority.high,
     );
@@ -56,9 +54,10 @@ class NotificationService {
         platformChannelSpecifics,
         payload: 'Custom Payload',
       );
-      print("Notification displayed successfully!");
     } catch (e) {
-      print("Error displaying notification: $e");
+      if (kDebugMode) {
+        print("Error displaying notification: $e");
+      }
     }
   }
 

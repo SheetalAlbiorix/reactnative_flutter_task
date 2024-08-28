@@ -1,14 +1,15 @@
 import 'dart:async';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:intl/intl.dart';
 import 'package:reactnativetask/utils/shared_data.dart';
 import '../../models/store_list_model.dart';
 import '../../utils/base_colors.dart';
 import '../../utils/base_strings.dart';
 import '../../utils/base_text_styles.dart';
+import '../signin_screen/signin_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -18,153 +19,325 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  Timer? _timer;
-  int _counter = 0;
-  List<bool> toggleStates = List.generate(10, (index) => false);
+  Map<int, Timer?> notificationTimers = {};
   List<StoreListModel>? upcomingData = [];
+  TimeOfDay? selectedTime;
 
   @override
   void initState() {
     getData();
     super.initState();
-    _startTimer();
   }
 
   getData() async {
-    upcomingData = await SharedData().getDataStored();
-    print(upcomingData?[0].isNotified);
+    upcomingData = await SharedData().readDataStored();
     if (upcomingData!.isEmpty) {
       setState(() {
         upcomingData?.addAll(stores);
       });
     } else {
       setState(() {
-        upcomingData =  upcomingData;
+        upcomingData = upcomingData;
       });
     }
 
+    // Initialize timers for already toggled on items
+    for (int i = 0; i < upcomingData!.length; i++) {
+      if (upcomingData![i].isNotified ?? false) {
+        _startNotificationTimer(i);
+      }
+    }
   }
 
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      setState(() {
-        _counter++;
-        showNotification();
-      });
+  void _startNotificationTimer(int index) {
+    notificationTimers[index]?.cancel(); // Cancel any existing timer
+    notificationTimers[index] =
+        Timer.periodic(const Duration(minutes: 5), (timer) {
+      showNotification();
     });
+  }
+
+  void _stopNotificationTimer(int index) {
+    notificationTimers[index]?.cancel();
+    notificationTimers.remove(index);
+  }
+
+  Future<void> _showAddDataDialog() async {
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController imageController = TextEditingController();
+    final TextEditingController spendAmountController = TextEditingController();
+    final TextEditingController timeController = TextEditingController();
+    final TextEditingController saveAmountController = TextEditingController();
+
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(BaseStrings.addStore),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration:
+                      const InputDecoration(labelText: BaseStrings.storeName),
+                ),
+                GestureDetector(
+                  onTap: () async {
+                    final TimeOfDay? time = await showTimePicker(
+                      barrierDismissible: false,
+                      context: context,
+                      builder: (BuildContext context, Widget? child) {
+                        return MediaQuery(
+                          data: MediaQuery.of(context).copyWith(
+                            alwaysUse24HourFormat: false,
+                          ),
+                          child: child!,
+                        );
+                      },
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (time != null && time != selectedTime) {
+                      setState(() {
+                        selectedTime = time;
+                        // Update the TextField with selected time in 12-hour format
+                        timeController.text = formatTimeOfDay(time);
+                      });
+                    }
+                  },
+                  child: AbsorbPointer(
+                    child: TextField(
+                      controller: timeController,
+                      decoration: const InputDecoration(
+                        labelText: BaseStrings.openTime,
+                        suffixIcon: Icon(Icons.access_time),
+                      ),
+                    ),
+                  ),
+                ),
+                TextField(
+                  controller: spendAmountController,
+                  decoration:
+                      const InputDecoration(labelText: BaseStrings.spendAmount),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(
+                  controller: saveAmountController,
+                  decoration:
+                      const InputDecoration(labelText: BaseStrings.saveAmount),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(BaseStrings.cancel),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.isEmpty) {
+                  Navigator.of(context).pop();
+                } else {
+                  final newStore = StoreListModel(
+                    name: nameController.text,
+                    image: imageController.text,
+                    time: timeController.text,
+                    spendAmount:
+                        double.tryParse(spendAmountController.text).toString(),
+                    saveAmount:
+                        double.tryParse(saveAmountController.text).toString(),
+                    isNotified: false,
+                  );
+                  setState(() {
+                    upcomingData?.add(newStore);
+                    SharedData().saveDataStored(upcomingData!);
+                  });
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text(BaseStrings.add),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String formatTimeOfDay(TimeOfDay timeOfDay) {
+    final now = DateTime.now();
+    final DateTime dateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      timeOfDay.hour,
+      timeOfDay.minute,
+    );
+    final format = DateFormat.jm();
+    return format.format(dateTime);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-          centerTitle: true, title: const Text(BaseStrings.featuredStores)),
-      body: ListView.builder(
-        itemCount: upcomingData?.length,
-        itemBuilder: (context, index) {
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 5),
-            elevation: 10.0, // Adjust elevation here
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-              side: BorderSide(color: Colors.grey.shade400, width: 1.0),
-            ),
-            child: ListTile(
-              horizontalTitleGap: 8,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 5, vertical: 0),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(color: Colors.grey.shade400, width: 1.0),
-              ),
-              dense: true,
-              tileColor: BaseColors.baseColor,
-              leading: ClipOval(
-                child: CachedNetworkImage(
-                  imageUrl: upcomingData?[index].image ?? "",
-                  imageBuilder: (context, imageProvider) => Container(
-                    height: 60.0, // Increased size
-                    width: 60.0, // Increased size
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      // Ensures the image is circular
-                      image: DecorationImage(
-                        image: imageProvider,
-                        fit: BoxFit.cover,
+      appBar: AppBar(actions: [
+        TextButton(
+            onPressed: () {
+              SharedData().saveUserCredentialsData(false);
+              Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const SignInScreen()),
+                  (Route<dynamic> route) => false);
+            },
+            child: const Row(
+              children: [
+                Text(
+                  BaseStrings.signOut,
+                  style: TextStyles.boldText,
+                ),
+                Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Icon(Icons.logout),
+                )
+              ],
+            ))
+      ], title: const Text(BaseStrings.featuredStores)),
+      body: Stack(
+        children: [
+          ListView.builder(
+            padding: const EdgeInsets.only(bottom: 80.0),
+            // Add bottom padding for FAB
+            itemCount: upcomingData?.length,
+            itemBuilder: (context, index) {
+              return Card(
+                margin:
+                    const EdgeInsets.symmetric(horizontal: 20.0, vertical: 5),
+                elevation: 10.0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(color: Colors.grey.shade400, width: 1.0),
+                ),
+                child: ListTile(
+                  horizontalTitleGap: 8,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(color: Colors.grey.shade400, width: 1.0),
+                  ),
+                  dense: true,
+                  tileColor: BaseColors.baseColor,
+                  leading: ClipOval(
+                    child: CachedNetworkImage(
+                      imageUrl: upcomingData?[index].image ?? "",
+                      imageBuilder: (context, imageProvider) => Container(
+                        height: 60.0,
+                        width: 60.0,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          image: DecorationImage(
+                            image: imageProvider,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
+                      placeholder: (context, url) =>
+                          const CircularProgressIndicator(),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.error),
                     ),
                   ),
-                  placeholder: (context, url) =>
-                      const CircularProgressIndicator(),
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                  title: Text('${upcomingData?[index].name}',
+                      style: TextStyles.boldText),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                          '${BaseStrings.opensAt} ${upcomingData?[index].time}',
+                          style: TextStyles.subtitleText),
+                      upcomingData?[index].spendAmount != null
+                          ? Text(
+                              '${BaseStrings.spend} ${upcomingData?[index].spendAmount}, ${BaseStrings.save} ${upcomingData?[index].saveAmount}',
+                              style: TextStyles.subText)
+                          : const Text(""),
+                    ],
+                  ),
+                  trailing: CupertinoSwitch(
+                    activeColor: BaseColors.greenColor,
+                    trackColor: BaseColors.greyColor.withOpacity(0.3),
+                    value: upcomingData![index].isNotified ?? false,
+                    onChanged: (bool value) async {
+                      setState(() {
+                        upcomingData?[index].isNotified = value;
+                        SharedData().saveDataStored(upcomingData!);
+                      });
+
+                      if (value) {
+                        _startNotificationTimer(index);
+                      } else {
+                        _stopNotificationTimer(index);
+                      }
+                    },
+                  ),
                 ),
-              ),
-              title: Text('${upcomingData?[index].name}',
-                  style: TextStyles.boldText),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${BaseStrings.opensAt} ${upcomingData?[index].time}',
-                      style: TextStyles.subtitleText),
-                  upcomingData?[index].spendAmount != null
-                      ? Text(
-                          '${BaseStrings.spend} ${stores[index].spendAmount}, ${BaseStrings.save} ${stores[index].saveAmount}',
-                          style: TextStyles.subText)
-                      : const Text("")
-                ],
-              ),
-              trailing: CupertinoSwitch(
-                activeColor: BaseColors.greenColor,
-                trackColor: BaseColors.greyColor.withOpacity(0.3),
-                value: upcomingData![index].isNotified ?? false,
-                onChanged: (bool value) async {
-                  // Update the value in your data list
-                  setState(() {
-                    upcomingData?[index].isNotified = value;
-                    print(upcomingData?[0].isNotified);
-
-                    SharedData().saveDataStored(upcomingData!);
-                  });
-
-                  // Retrieve the updated data from SharedPreferences
-                  var retrievedData = await SharedData().getDataStored();
-
-                  // Print the updated data
-                  print(retrievedData);
-
-
-                },
-              ),
+              );
+            },
+          ),
+          Positioned(
+            bottom: 16.0,
+            right: 16.0,
+            child: FloatingActionButton(
+              onPressed: _showAddDataDialog,
+              backgroundColor: BaseColors.greenColor,
+              child: const Icon(Icons.add),
             ),
-          );
-        },
+          ),
+        ],
       ),
+    );
+  }
+
+  @override
+  void dispose() {
+    // Cancel all timers when the widget is disposed
+    for (var timer in notificationTimers.values) {
+      timer?.cancel();
+    }
+    super.dispose();
+  }
+
+  Future<void> showNotification() async {
+    final List<String> activeStores = upcomingData!
+        .where((store) => store.isNotified == true)
+        .map((store) => store.name ?? "")
+        .toList();
+    final String activeStoresString = activeStores.join(", ");
+
+    const AndroidNotificationDetails androidNotificationDetails =
+        AndroidNotificationDetails(
+      'channel_id',
+      'channel_name',
+      channelDescription: 'Channel description',
+      importance: Importance.max,
+      priority: Priority.high,
+      ticker: 'ticker',
+    );
+
+    const NotificationDetails notificationDetails =
+        NotificationDetails(android: androidNotificationDetails);
+
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      'Store Notification',
+      'Toggles ON: $activeStoresString',
+      notificationDetails,
+      payload: 'Active Stores: $activeStoresString',
     );
   }
 }
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
-
-Future<void> showNotification() async {
-  const AndroidNotificationDetails androidNotificationDetails =
-      AndroidNotificationDetails(
-    'channel_id', // Your channel ID
-    'channel_name', // Your channel name
-    channelDescription: 'Channel description',
-    importance: Importance.max,
-    priority: Priority.high,
-    ticker: 'ticker',
-  );
-
-  const NotificationDetails notificationDetails =
-      NotificationDetails(android: androidNotificationDetails);
-
-  await flutterLocalNotificationsPlugin.show(
-    0,
-    'Notification Title',
-    'Notification Body',
-    notificationDetails,
-    payload: 'Notification Payload', // Optional payload
-  );
-}
