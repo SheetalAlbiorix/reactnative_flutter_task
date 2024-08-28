@@ -22,7 +22,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final GoogleSignIn googleSignIn = GoogleSignIn(
     scopes: ['email'],
   );
-  TextEditingController emailController = TextEditingController();
+  TextEditingController usernameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
 
   @override
@@ -76,7 +76,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   child: TextFormField(
-                    controller: emailController,
+                    controller: usernameController,
                     decoration: InputDecoration(
                       filled: true,
                       border: OutlineInputBorder(
@@ -93,7 +93,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           borderRadius: BorderRadius.circular(14)),
                       fillColor: BaseColors.textFromFieldColor,
                       label: const Text(
-                        BaseStrings.emailText,
+                        BaseStrings.username,
                         style: TextStyle(
                             color: BaseColors.backgroundBlueColor,
                             fontSize: 14),
@@ -135,7 +135,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   splashColor: Colors.transparent,
                   splashFactory: NoSplash.splashFactory,
                   onTap: () {
-                    if (emailController.text == "admin" &&
+                    if (usernameController.text == "admin" &&
                         passwordController.text == "password123") {
                       SharedData().saveUserCredentialsData(true);
                       Navigator.of(context).pushAndRemoveUntil(
@@ -187,9 +187,8 @@ class _SignInScreenState extends State<SignInScreen> {
                       ),
                       Expanded(
                         child: Divider(
-                          color: BaseColors.backgroundBlueColor,
-                          thickness: 2,
-                        ),
+                            color: BaseColors.backgroundBlueColor,
+                            thickness: 2),
                       ),
                     ],
                   ),
@@ -214,6 +213,7 @@ class _SignInScreenState extends State<SignInScreen> {
                               await firebaseAuthInstance
                                   .signInWithCredential(credential);
                               if (context.mounted) {
+                                SharedData().saveUserCredentialsData(true);
                                 Navigator.of(context).pushAndRemoveUntil(
                                     MaterialPageRoute(
                                         builder: (context) =>

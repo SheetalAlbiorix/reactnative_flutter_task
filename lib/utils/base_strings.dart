@@ -15,11 +15,12 @@ class BaseStrings {
   static const String signInDescText =
       'Today is a new day. It\'s your day. You shape it.Sign in to start managing your projects.';
   static const String signInWelcomeText = 'Welcome Back  👋';
-  static const String emailText = 'Email';
+  static const String username = 'Username';
   static const String passwordText = 'Password';
   static const String loginText = 'Login';
   static const String orSignInWithText = 'Or sign in with';
   static const String invalidCredentials = "Invalid Credentials!";
+  static const String enterProperData = "Enter proper data!";
   static const String savedData = "savedData";
   static const String addStore = "Add New Store";
   static const String storeName = "Store Name";
@@ -31,4 +32,9 @@ class BaseStrings {
   static const String add = 'Add';
   static const String saveAmount = 'Save Amount';
   static const String signOut = 'Sign Out';
+  static const String enterStoreName = 'Please enter the store name';
+  static const String selectTime = 'Please select a time';
+  static const String enterSpendAmount = 'Please enter the spend amount';
+  static const String enterSaveAmount = 'Please enter the save amount';
+  static const String enterValidAmount = 'Please enter a valid number';
 }

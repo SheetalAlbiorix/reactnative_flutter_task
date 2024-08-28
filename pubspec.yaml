@@ -47,6 +47,21 @@ dependencies:
   shared_preferences: ^2.2.3
   http: ^1.2.2
   intl: ^0.19.0
+  flutter_native_splash: ^2.4.1
+flutter_native_splash:
+  image: assets/images/logo1.png # Path to your image asset
+  color: 0F0F0F
+  icon_background_color : 0F0F0F
+  fullscreen: false
+  android_gravity: center
+  ios: true
+  android_12:
+    image: assets/images/logo1.png
+    color: 0F0F0F
+    icon_background_color : 0F0F0F
+    fullscreen: true
+    android_gravity: fill
+    ios: true
 
 dev_dependencies:
   flutter_test:

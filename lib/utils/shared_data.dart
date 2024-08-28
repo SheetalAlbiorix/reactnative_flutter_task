@@ -46,4 +46,10 @@ class SharedData {
     final data = prefs.getString(BaseStrings.token);
     return data != null ? json.decode(data) : null;
   }
+
+  ///Clear Shared Data
+  Future<void> clearData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  }
 }

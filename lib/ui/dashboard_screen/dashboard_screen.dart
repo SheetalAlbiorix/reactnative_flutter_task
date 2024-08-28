@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -49,10 +50,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  String? getRandomImageUrl() {
+    if (upcomingData == null || upcomingData!.isEmpty) {
+      return ''; // Or return a default image URL
+    }
+
+    final random = Random();
+    final randomIndex = random.nextInt(upcomingData!.length);
+    return upcomingData![randomIndex].image;
+  }
+
   void _startNotificationTimer(int index) {
     notificationTimers[index]?.cancel(); // Cancel any existing timer
     notificationTimers[index] =
-        Timer.periodic(const Duration(minutes: 5), (timer) {
+        Timer.periodic(const Duration(seconds: 5), (timer) {
       showNotification();
     });
   }
@@ -69,66 +80,99 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final TextEditingController timeController = TextEditingController();
     final TextEditingController saveAmountController = TextEditingController();
 
+    final formKey = GlobalKey<FormState>();
+
     return showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text(BaseStrings.addStore),
           content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration:
-                      const InputDecoration(labelText: BaseStrings.storeName),
-                ),
-                GestureDetector(
-                  onTap: () async {
-                    final TimeOfDay? time = await showTimePicker(
-                      barrierDismissible: false,
-                      context: context,
-                      builder: (BuildContext context, Widget? child) {
-                        return MediaQuery(
-                          data: MediaQuery.of(context).copyWith(
-                            alwaysUse24HourFormat: false,
-                          ),
-                          child: child!,
-                        );
-                      },
-                      initialTime: TimeOfDay.now(),
-                    );
-                    if (time != null && time != selectedTime) {
-                      setState(() {
-                        selectedTime = time;
-                        // Update the TextField with selected time in 12-hour format
-                        timeController.text = formatTimeOfDay(time);
-                      });
-                    }
-                  },
-                  child: AbsorbPointer(
-                    child: TextField(
-                      controller: timeController,
-                      decoration: const InputDecoration(
-                        labelText: BaseStrings.openTime,
-                        suffixIcon: Icon(Icons.access_time),
+            child: Form(
+              key: formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration:
+                        const InputDecoration(labelText: BaseStrings.storeName),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return BaseStrings.enterStoreName;
+                      }
+                      return null;
+                    },
+                  ),
+                  GestureDetector(
+                    onTap: () async {
+                      final TimeOfDay? time = await showTimePicker(
+                        barrierDismissible: false,
+                        context: context,
+                        builder: (BuildContext context, Widget? child) {
+                          return MediaQuery(
+                              data: MediaQuery.of(context)
+                                  .copyWith(alwaysUse24HourFormat: false),
+                              child: child!);
+                        },
+                        initialTime: TimeOfDay.now(),
+                      );
+                      if (time != null && time != selectedTime) {
+                        setState(() {
+                          selectedTime = time;
+                          timeController.text = formatTimeOfDay(time);
+                        });
+                      }
+                    },
+                    child: AbsorbPointer(
+                      child: TextFormField(
+                        controller: timeController,
+                        decoration: const InputDecoration(
+                          labelText: BaseStrings.openTime,
+                          suffixIcon: Icon(Icons.access_time),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return BaseStrings.selectTime;
+                          }
+                          return null;
+                        },
                       ),
                     ),
                   ),
-                ),
-                TextField(
-                  controller: spendAmountController,
-                  decoration:
-                      const InputDecoration(labelText: BaseStrings.spendAmount),
-                  keyboardType: TextInputType.number,
-                ),
-                TextField(
-                  controller: saveAmountController,
-                  decoration:
-                      const InputDecoration(labelText: BaseStrings.saveAmount),
-                  keyboardType: TextInputType.number,
-                ),
-              ],
+                  TextFormField(
+                    controller: spendAmountController,
+                    decoration: const InputDecoration(
+                        labelText: BaseStrings.spendAmount),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return BaseStrings.enterSpendAmount;
+                      }
+                      if (double.tryParse(value) == null) {
+                        return BaseStrings.enterValidAmount;
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller: saveAmountController,
+                    decoration: const InputDecoration(
+                        labelText: BaseStrings.saveAmount),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return BaseStrings.enterSaveAmount;
+                      }
+                      if (double.tryParse(value) == null) {
+                        return BaseStrings.enterValidAmount;
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -140,17 +184,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (nameController.text.isEmpty) {
-                  Navigator.of(context).pop();
-                } else {
+                if (formKey.currentState!.validate()) {
                   final newStore = StoreListModel(
                     name: nameController.text,
                     image: imageController.text,
                     time: timeController.text,
-                    spendAmount:
-                        double.tryParse(spendAmountController.text).toString(),
-                    saveAmount:
-                        double.tryParse(saveAmountController.text).toString(),
+                    spendAmount: double.tryParse(spendAmountController.text)
+                            ?.toString() ??
+                        '',
+                    saveAmount: double.tryParse(saveAmountController.text)
+                            ?.toString() ??
+                        '',
                     isNotified: false,
                   );
                   setState(() {
@@ -158,6 +202,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     SharedData().saveDataStored(upcomingData!);
                   });
                   Navigator.of(context).pop();
+                } else {
+                  FocusManager.instance.primaryFocus?.unfocus();
                 }
               },
               child: const Text(BaseStrings.add),
@@ -188,6 +234,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         TextButton(
             onPressed: () {
               SharedData().saveUserCredentialsData(false);
+              SharedData().clearData();
               Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const SignInScreen()),
                   (Route<dynamic> route) => false);
@@ -209,7 +256,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           ListView.builder(
             padding: const EdgeInsets.only(bottom: 80.0),
-            // Add bottom padding for FAB
             itemCount: upcomingData?.length,
             itemBuilder: (context, index) {
               return Card(
@@ -217,37 +263,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const EdgeInsets.symmetric(horizontal: 20.0, vertical: 5),
                 elevation: 10.0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(color: Colors.grey.shade400, width: 1.0),
-                ),
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(color: Colors.grey.shade400, width: 1.0)),
                 child: ListTile(
                   horizontalTitleGap: 8,
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 5, vertical: 0),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    side: BorderSide(color: Colors.grey.shade400, width: 1.0),
-                  ),
+                      borderRadius: BorderRadius.circular(10.0),
+                      side:
+                          BorderSide(color: Colors.grey.shade400, width: 1.0)),
                   dense: true,
                   tileColor: BaseColors.baseColor,
                   leading: ClipOval(
                     child: CachedNetworkImage(
-                      imageUrl: upcomingData?[index].image ?? "",
-                      imageBuilder: (context, imageProvider) => Container(
-                        height: 60.0,
-                        width: 60.0,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          image: DecorationImage(
-                            image: imageProvider,
+                        imageUrl: upcomingData?[index].image ?? "",
+                        imageBuilder: (context, imageProvider) => Container(
+                              height: 60.0,
+                              width: 60.0,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                image: DecorationImage(
+                                    image: imageProvider, fit: BoxFit.cover),
+                              ),
+                            ),
+                        placeholder: (context, url) =>
+                            const CircularProgressIndicator(),
+                        errorWidget: (context, url, error) => ClipOval(
+                          child: Image.network(
+                            getRandomImageUrl()!,
+                            width: 50.0, // Set the width of the circle
+                            height: 50.0, // Set the height of the circle
                             fit: BoxFit.cover,
                           ),
                         ),
-                      ),
-                      placeholder: (context, url) =>
-                          const CircularProgressIndicator(),
-                      errorWidget: (context, url, error) =>
-                          const Icon(Icons.error),
                     ),
                   ),
                   title: Text('${upcomingData?[index].name}',
@@ -290,10 +339,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             bottom: 16.0,
             right: 16.0,
             child: FloatingActionButton(
-              onPressed: _showAddDataDialog,
-              backgroundColor: BaseColors.greenColor,
-              child: const Icon(Icons.add),
-            ),
+                onPressed: _showAddDataDialog,
+                backgroundColor: BaseColors.greenColor,
+                child: const Icon(Icons.add)),
           ),
         ],
       ),
